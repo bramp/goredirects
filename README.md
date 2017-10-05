@@ -15,7 +15,7 @@ go run bramp.net outputdir
 
 ```
 
-This will search your $GOROOT/src/<domain> for all pacakges, and create static HTML into the outputdir for each package.
+This will search your $GOROOT/src/<domain> for all packages, and create static HTML into the outputdir for each package.
 
 ## Licence (Apache 2)
 
