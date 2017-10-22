@@ -29,7 +29,7 @@ import (
 	"strings"
 )
 
-const TEMPLATE = `<html>
+const html = `<html>
 <head>
 <meta name="go-import" content="{{.Name}} git {{.RepoURL}}">
 <meta http-equiv="refresh" content="0; url={{.SiteURL}}" />
@@ -44,19 +44,19 @@ const TEMPLATE = `<html>
 </html>
 `
 
-type RedirectCreator struct {
+type redirectCreator struct {
 	vanity string // The vanity domain
 	output string // The output location
 }
 
-// TemplateData holds the data to be rendered by the tempalte
-type TemplateData struct {
-	Name    string // Root name "bramp.net/dsector"
-	RepoURL string // https://github.com/bramp/dsector.git
-	SiteURL string // https://github.com/bramp/dsector
+// templateData holds the data to be rendered by the template
+type templateData struct {
+	Name    string // Root name "bramp.net/goredirects"
+	RepoURL string // https://github.com/bramp/goredirects.git
+	SiteURL string // https://github.com/bramp/goredirects
 }
 
-var tmpl = template.Must(template.New("index").Parse(TEMPLATE))
+var tmpl = template.Must(template.New("index").Parse(html))
 
 var githubSSHrx = regexp.MustCompile("git@github.com:([^/]*)/(.*).git")
 var githubHTTPSrx = regexp.MustCompile("https://github.com/([^/]*)/(.*)(?:.git)?")
@@ -95,7 +95,8 @@ func isDir(path string) bool {
 	return fi.Mode().IsDir()
 }
 
-func (r *RedirectCreator) Create() error {
+// Create creates all the redirect HTML pages based on the supplied vanity domain.
+func (r *redirectCreator) Create() error {
 	srcdir := filepath.Join(build.Default.GOPATH, "src")
 	root := filepath.Join(srcdir, r.vanity)
 	repos, err := filepath.Glob(filepath.Join(root, "*"))
@@ -117,7 +118,7 @@ func (r *RedirectCreator) Create() error {
 	return nil
 }
 
-func (r *RedirectCreator) handleRepo(srcdir, repopath string) error {
+func (r *redirectCreator) handleRepo(srcdir, repopath string) error {
 	name, err := filepath.Rel(srcdir, repopath)
 	if err != nil {
 		return fmt.Errorf("failed to lookup repo name %q: %s", repopath, err)
@@ -141,7 +142,7 @@ func (r *RedirectCreator) handleRepo(srcdir, repopath string) error {
 
 	url := githubSSHtoHTTPS(urls[0])
 
-	data := TemplateData{
+	data := templateData{
 		Name:    name,
 		RepoURL: url,
 		SiteURL: githubHTTPStoWeb(url),
@@ -173,7 +174,7 @@ func (r *RedirectCreator) handleRepo(srcdir, repopath string) error {
 	return nil
 }
 
-func (r *RedirectCreator) writeHTML(name string, data TemplateData) error {
+func (r *redirectCreator) writeHTML(name string, data templateData) error {
 	// Drop the domain from the beginning. This is a bit of a hack.
 	name = strings.TrimPrefix(name, r.vanity)
 
@@ -205,7 +206,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	redirect := RedirectCreator{
+	redirect := redirectCreator{
 		vanity: flag.Arg(0),
 		output: flag.Arg(1),
 	}
