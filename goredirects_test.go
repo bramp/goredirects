@@ -18,7 +18,7 @@ import (
 	"testing"
 )
 
-func TestGithubSSHtoHTTPS(t *testing.T) {
+func TestGitSSHtoHTTPS(t *testing.T) {
 	tests := []struct {
 		input string
 		want  string
@@ -26,26 +26,31 @@ func TestGithubSSHtoHTTPS(t *testing.T) {
 		{"https://github.com/user/project", "https://github.com/user/project"},
 		{"https://github.com/user/project.git", "https://github.com/user/project.git"},
 		{"git@github.com:user/project.git", "https://github.com/user/project.git"},
+		{"https://bitbucket.org/user/project", "https://bitbucket.org/user/project"},
+		{"https://bitbucket.org/user/project.git", "https://bitbucket.org/user/project.git"},
+		{"git@bitbucket.org:user/project.git", "https://bitbucket.org/user/project.git"},
 	}
 
 	for _, test := range tests {
-		if got := githubSSHtoHTTPS(test.input); got != test.want {
+		if got := gitSSHtoHTTPS(test.input); got != test.want {
 			t.Errorf("githubSSHtoHTTPS(%q) = %q, want %q", test.input, got, test.want)
 		}
 	}
 }
 
-func TestGithubHTTPStoWeb(t *testing.T) {
+func TestGitHTTPStoWeb(t *testing.T) {
 	tests := []struct {
 		input string
 		want  string
 	}{
 		{"https://github.com/user/project", "https://github.com/user/project"},
 		{"https://github.com/user/project.git", "https://github.com/user/project"},
+		{"https://bitbucket.org/user/project", "https://bitbucket.org/user/project"},
+		{"https://bitbucket.org/user/project.git", "https://bitbucket.org/user/project"},
 	}
 
 	for _, test := range tests {
-		if got := githubHTTPStoWeb(test.input); got != test.want {
+		if got := gitHTTPStoWeb(test.input); got != test.want {
 			t.Errorf("githubHTTPStoWeb(%q) = %q, want %q", test.input, got, test.want)
 		}
 	}
