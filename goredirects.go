@@ -14,7 +14,7 @@
 
 // goredirects creates static HTML that redirects go packages hosted
 // on a vanity domain to GitHub.
-package main // import "bramp.net/goredirects"
+package main
 
 import (
 	"flag"
@@ -58,30 +58,30 @@ type templateData struct {
 
 var tmpl = template.Must(template.New("index").Parse(html))
 
-var githubSSHrx = regexp.MustCompile("git@github.com:([^/]*)/(.*).git")
-var githubHTTPSrx = regexp.MustCompile("https://github.com/([^/]*)/(.*)(?:.git)?")
+var gitSSHrx = regexp.MustCompile("git@(.*):([^/]*)/(.*).git")
+var gitHTTPSrx = regexp.MustCompile("https://(.*)/([^/]*)/(.*)(?:.git)?")
 
-// githubSSHtoHTTPS takes a URL to a SSH repo, and returns the equlivant HTTPS url.
-// If it is already a valid Github HTTPS URL just return it.
-func githubSSHtoHTTPS(url string) string {
-	matches := githubSSHrx.FindStringSubmatch(url)
-	if len(matches) == 3 {
-		return fmt.Sprintf("https://github.com/%s/%s.git", matches[1], matches[2])
+// gitSSHtoHTTPS takes a URL to a SSH repo, and returns the equlivant HTTPS url.
+// If it is already a valid Git HTTPS URL just return it.
+func gitSSHtoHTTPS(url string) string {
+	matches := gitSSHrx.FindStringSubmatch(url)
+	if len(matches) == 4 {
+		return fmt.Sprintf("https://%s/%s/%s.git", matches[1], matches[2], matches[3])
 	}
 
 	// Perhaps it is already a HTTPS URL?
-	if githubHTTPSrx.MatchString(url) {
+	if gitHTTPSrx.MatchString(url) {
 		return url
 	}
 
 	// TODO(bramp) Change this to return an error.
-	panic(fmt.Sprintf("not a github repo URL %q", url))
+	panic(fmt.Sprintf("not a git repo URL %q", url))
 }
 
-// githubHTTPStoWeb takes a URL to a HTTPS repo, and returns the site.
-func githubHTTPStoWeb(url string) string {
-	if !githubHTTPSrx.MatchString(url) {
-		panic(fmt.Sprintf("not a github HTTP URL %q", url))
+// gitHTTPStoWeb takes a URL to a HTTPS repo, and returns the site.
+func gitHTTPStoWeb(url string) string {
+	if !gitHTTPSrx.MatchString(url) {
+		panic(fmt.Sprintf("not a git HTTP URL %q", url))
 	}
 	return strings.TrimSuffix(url, ".git")
 }
@@ -140,12 +140,12 @@ func (r *redirectCreator) handleRepo(srcdir, repopath string) error {
 		return fmt.Errorf("expected only one URL %q: %q", repopath, urls)
 	}
 
-	url := githubSSHtoHTTPS(urls[0])
+	url := gitSSHtoHTTPS(urls[0])
 
 	data := templateData{
 		Name:    name,
 		RepoURL: url,
-		SiteURL: githubHTTPStoWeb(url),
+		SiteURL: gitHTTPStoWeb(url),
 	}
 
 	r.writeHTML(name, data)
