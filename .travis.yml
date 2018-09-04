@@ -1,10 +1,14 @@
 dist: trusty
 sudo: false
 
+git:
+  depth: 1
+
 language: go
+
 go:
-  - 1.8.x
-  - 1.9.x
+  - 1.10.x
+  - 1.11.x
   - tip
 
 go_import_path: bramp.net/goredirects
@@ -12,6 +16,8 @@ go_import_path: bramp.net/goredirects
 before_install:
   - go get github.com/mattn/goveralls
   - go get golang.org/x/tools/cmd/cover
+  - go get ./...
 
 script:
+  - go test -v ./...
   - $HOME/gopath/bin/goveralls -service=travis-ci
