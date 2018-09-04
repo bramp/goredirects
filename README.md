@@ -20,6 +20,10 @@ $ go install bramp.net/goredirects
 
 $ goredirects
 Usage: goredirects <domain> <output dir>
+  -git-remote string
+        Git remote name (default "origin")
+  -include-vendor
+        Include vendor directory
 
 $ goredirects bramp.net outputdir
 # Looking under $GOROOT/src/bramp.net for all packages
