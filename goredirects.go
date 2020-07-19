@@ -20,13 +20,14 @@ import (
 	"flag"
 	"fmt"
 	"go/build"
-	git "github.com/go-git/go-git"
 	"html/template"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	git "github.com/go-git/go-git/v5"
 )
 
 const html = `<html>

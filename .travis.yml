@@ -3,8 +3,10 @@ sudo: false
 
 language: go
 go:
-  - 1.8.x
-  - 1.9.x
+  - "1.11"
+  - "1.12"
+  - "1.13"
+  - "1.14"
   - tip
 
 go_import_path: bramp.net/goredirects
