@@ -45,8 +45,10 @@ const html = `<html>
 `
 
 type redirectCreator struct {
-	vanity string // The vanity domain
-	output string // The output location
+	vanity        string // The vanity domain
+	output        string // The output location
+	gitRemote     string // The git remote name
+	includeVendor bool   // Include vendor directory
 }
 
 // templateData holds the data to be rendered by the template
@@ -129,10 +131,9 @@ func (r *redirectCreator) handleRepo(srcdir, repopath string) error {
 		return fmt.Errorf("failed to open %q: %s", repopath, err)
 	}
 
-	remote, err := repo.Remote("origin")
+	remote, err := repo.Remote(r.gitRemote)
 	if err != nil {
-		// TODO Use repo.Remotes() to find one if origin doesn't exist
-		return fmt.Errorf("failed to get %q remote %q: %s", "origin", repopath, err)
+		return fmt.Errorf("failed to get %q remote %q: %s", r.gitRemote, repopath, err)
 	}
 
 	urls := remote.Config().URLs
@@ -160,7 +161,7 @@ func (r *redirectCreator) handleRepo(srcdir, repopath string) error {
 			if err != nil {
 				return err
 			}
-			if _, found := subpackages[dir]; !found {
+			if _, found := subpackages[dir]; !found && (!strings.Contains(dir, "/vendor/") || r.includeVendor) {
 				r.writeHTML(dir, data)
 			}
 			subpackages[dir] = true
@@ -194,6 +195,14 @@ func (r *redirectCreator) writeHTML(name string, data templateData) error {
 }
 
 func main() {
+	var (
+		includeVendor bool
+		gitRemote     string
+	)
+
+	flag.BoolVar(&includeVendor, "include-vendor", false, "Include vendor directory")
+	flag.StringVar(&gitRemote, "git-remote", "origin", "Git remote name")
+
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s <domain> <output dir>\n", os.Args[0])
 		flag.PrintDefaults()
@@ -207,8 +216,10 @@ func main() {
 	}
 
 	redirect := redirectCreator{
-		vanity: flag.Arg(0),
-		output: flag.Arg(1),
+		vanity:        flag.Arg(0),
+		output:        flag.Arg(1),
+		includeVendor: includeVendor,
+		gitRemote:     gitRemote,
 	}
 	redirect.Create()
 }
