@@ -20,7 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"go/build"
-	git "gopkg.in/src-d/go-git.v4"
+	git "github.com/go-git/go-git"
 	"html/template"
 	"log"
 	"os"
