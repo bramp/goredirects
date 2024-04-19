@@ -1,4 +1,4 @@
-# goredirects [![Build Status](https://img.shields.io/travis/bramp/goredirects.svg)](https://travis-ci.org/bramp/goredirects) [![Coverage](https://img.shields.io/coveralls/bramp/goredirects.svg)](https://coveralls.io/github/bramp/goredirects) [![Report card](https://goreportcard.com/badge/bramp.net/goredirects)](https://goreportcard.com/report/bramp.net/goredirects) [![GoDoc](https://godoc.org/bramp.net/goredirects?status.svg)](https://godoc.org/bramp.net/goredirects)
+# goredirects [![Report card](https://goreportcard.com/badge/bramp.net/goredirects)](https://goreportcard.com/report/bramp.net/goredirects) [![GoDoc](https://godoc.org/bramp.net/goredirects?status.svg)](https://godoc.org/bramp.net/goredirects)
 
 by Andrew Brampton ([bramp.net](https://bramp.net))
 
@@ -16,7 +16,7 @@ command to redirect from your vanity domain to GitHub.com.
 To create a set of static HTML redirects:
 
 ```bash
-$ go install bramp.net/goredirects
+$ go install bramp.net/goredirects@latest
 
 $ goredirects
 Usage: goredirects <domain> <output dir>
