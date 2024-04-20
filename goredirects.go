@@ -19,13 +19,13 @@ package main // import "bramp.net/goredirects"
 import (
 	"flag"
 	"fmt"
-	"go/build"
 	"html/template"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"net/url"
 
 	git "github.com/go-git/go-git/v5"
 )
@@ -36,7 +36,7 @@ const html = `<html>
 <meta http-equiv="refresh" content="0; url={{.SiteURL}}" />
 <link rel="canonical" href="{{.SiteURL}}" />
 <script>
-	window.location.replace("{{.SiteURL}}");
+	window.location.replace({{.SiteURL }});
 </script>
 </head>
 <body>
@@ -47,14 +47,15 @@ const html = `<html>
 
 type redirectCreator struct {
 	vanity string // The vanity domain
+	input string  // The path to the root of all go projects
 	output string // The output location
 }
 
 // templateData holds the data to be rendered by the template
 type templateData struct {
 	Name    string // Root name "bramp.net/goredirects"
-	RepoURL string // https://github.com/bramp/goredirects.git
-	SiteURL string // https://github.com/bramp/goredirects
+	RepoURL template.URL // https://github.com/bramp/goredirects.git
+	SiteURL template.URL // https://github.com/bramp/goredirects
 }
 
 var tmpl = template.Must(template.New("index").Parse(html))
@@ -98,9 +99,7 @@ func isDir(path string) bool {
 
 // Create creates all the redirect HTML pages based on the supplied vanity domain.
 func (r *redirectCreator) Create() error {
-	srcdir := filepath.Join(build.Default.GOPATH, "src")
-	root := filepath.Join(srcdir, r.vanity)
-	repos, err := filepath.Glob(filepath.Join(root, "*"))
+	repos, err := filepath.Glob(filepath.Join(r.input, "*"))
 	if err != nil {
 		return fmt.Errorf("failed to read repos: %s", err)
 	}
@@ -111,7 +110,7 @@ func (r *redirectCreator) Create() error {
 			continue
 		}
 
-		if err := r.handleRepo(srcdir, repopath); err != nil {
+		if err := r.handleRepo(repopath); err != nil {
 			log.Printf("%s", err)
 		}
 	}
@@ -119,34 +118,60 @@ func (r *redirectCreator) Create() error {
 	return nil
 }
 
-func (r *redirectCreator) handleRepo(srcdir, repopath string) error {
-	name, err := filepath.Rel(srcdir, repopath)
-	if err != nil {
-		return fmt.Errorf("failed to lookup repo name %q: %s", repopath, err)
-	}
-
+// Returns the HTTPS/Web URL for this repo.
+func (redirectCreator) repoURL(repopath string) (string, error) {
 	repo, err := git.PlainOpen(repopath)
 	if err != nil {
-		return fmt.Errorf("failed to open %q: %s", repopath, err)
+		return "", fmt.Errorf("failed to open: %s", repopath, err)
 	}
 
 	remote, err := repo.Remote("origin")
 	if err != nil {
 		// TODO Use repo.Remotes() to find one if origin doesn't exist
-		return fmt.Errorf("failed to get %q remote %q: %s", "origin", repopath, err)
+		return "", fmt.Errorf("failed to get remote %q: %s", "origin", repopath, err)
 	}
 
 	urls := remote.Config().URLs
 	if len(urls) != 1 {
-		return fmt.Errorf("expected only one URL %q: %q", repopath, urls)
+		return "", fmt.Errorf("expected only one URL %q: %q", repopath, urls)
 	}
 
-	url := githubSSHtoHTTPS(urls[0])
+	return githubSSHtoHTTPS(urls[0]), nil
+}
+
+
+func (r *redirectCreator) handleRepo(repopath string) error {
+	name, err := filepath.Rel(r.input, repopath)
+	if err != nil {
+		return fmt.Errorf("failed to lookup repo name: %s", err)
+	}
+
+	vanityName := url.URL{
+		Host: r.vanity,
+		Path: name,
+	}
+
+	repo, err := r.repoURL(repopath)
+	if err != nil {
+		return fmt.Errorf("failed to lookup repo url: %s", err)
+	}
+
+	// TODO make these use URLs not strings
+	repoURL, err := url.Parse(repo);
+	if err != nil {
+		return fmt.Errorf("failed to parse repo url $q: %s", repo, err)
+	}
+
+	site := githubHTTPStoWeb(repo)
+	siteURL, err := url.Parse( site );
+	if err != nil {
+		return fmt.Errorf("failed to parse repo url %q: %s", site, err)
+	}
 
 	data := templateData{
-		Name:    name,
-		RepoURL: url,
-		SiteURL: githubHTTPStoWeb(url),
+		Name:    strings.TrimPrefix(vanityName.String(), "//"),
+		RepoURL: template.URL(repoURL.String()),
+		SiteURL: template.URL(siteURL.String()),
 	}
 
 	r.writeHTML(name, data)
@@ -157,7 +182,7 @@ func (r *redirectCreator) handleRepo(srcdir, repopath string) error {
 
 	if err := filepath.Walk(repopath, func(path string, info os.FileInfo, err error) error {
 		if strings.HasSuffix(path, ".go") {
-			dir, err := filepath.Rel(srcdir, filepath.Dir(path))
+			dir, err := filepath.Rel(r.input, filepath.Dir(path))
 			if err != nil {
 				return err
 			}
@@ -176,9 +201,6 @@ func (r *redirectCreator) handleRepo(srcdir, repopath string) error {
 }
 
 func (r *redirectCreator) writeHTML(name string, data templateData) error {
-	// Drop the domain from the beginning. This is a bit of a hack.
-	name = strings.TrimPrefix(name, r.vanity)
-
 	path := filepath.Join(r.output, name)
 
 	log.Printf("Writing %q\n", path)
@@ -196,20 +218,21 @@ func (r *redirectCreator) writeHTML(name string, data templateData) error {
 
 func main() {
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s <domain> <output dir>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s <domain> <input dir> <output dir>\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 
 	flag.Parse()
 
-	if flag.NArg() < 2 {
+	if flag.NArg() < 3 {
 		flag.Usage()
 		os.Exit(1)
 	}
 
 	redirect := redirectCreator{
 		vanity: flag.Arg(0),
-		output: flag.Arg(1),
+		input: flag.Arg(1),
+		output: flag.Arg(2),
 	}
 	redirect.Create()
 }
