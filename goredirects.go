@@ -19,6 +19,7 @@ package main // import "bramp.net/goredirects"
 import (
 	"flag"
 	"fmt"
+	"go/build"
 	"html/template"
 	"log"
 	"os"
@@ -224,15 +225,32 @@ func main() {
 
 	flag.Parse()
 
-	if flag.NArg() < 3 {
-		flag.Usage()
-		os.Exit(1)
+	var redirect *redirectCreator
+
+	switch flag.NArg() {
+		case 2:
+			srcdir := filepath.Join(build.Default.GOPATH, "src")
+			redirect = &redirectCreator{
+				vanity: flag.Arg(0),
+				input: filepath.Join(srcdir, flag.Arg(0)),
+				output: flag.Arg(1),
+			}
+			fmt.Fprintf(os.Stderr, "Warning: <input dir> assumed to be %q. Please specify it in future.\n", redirect.input)
+			break
+
+		case 3:
+			redirect = &redirectCreator{
+				vanity: flag.Arg(0),
+				input: flag.Arg(1),
+				output: flag.Arg(2),
+			}
+			break
+
+		default:
+			flag.Usage()
+			os.Exit(1)
 	}
 
-	redirect := redirectCreator{
-		vanity: flag.Arg(0),
-		input: flag.Arg(1),
-		output: flag.Arg(2),
-	}
+
 	redirect.Create()
 }
