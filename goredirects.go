@@ -22,11 +22,11 @@ import (
 	"go/build"
 	"html/template"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"net/url"
 
 	git "github.com/go-git/go-git/v5"
 )
@@ -48,13 +48,13 @@ const html = `<html>
 
 type redirectCreator struct {
 	vanity string // The vanity domain
-	input string  // The path to the root of all go projects
+	input  string // The path to the root of all go projects
 	output string // The output location
 }
 
 // templateData holds the data to be rendered by the template
 type templateData struct {
-	Name    string // Root name "bramp.net/goredirects"
+	Name    string       // Root name "bramp.net/goredirects"
 	RepoURL template.URL // https://github.com/bramp/goredirects.git
 	SiteURL template.URL // https://github.com/bramp/goredirects
 }
@@ -140,7 +140,6 @@ func (redirectCreator) repoURL(repopath string) (string, error) {
 	return githubSSHtoHTTPS(urls[0]), nil
 }
 
-
 func (r *redirectCreator) handleRepo(repopath string) error {
 	name, err := filepath.Rel(r.input, repopath)
 	if err != nil {
@@ -158,13 +157,13 @@ func (r *redirectCreator) handleRepo(repopath string) error {
 	}
 
 	// TODO make these use URLs not strings
-	repoURL, err := url.Parse(repo);
+	repoURL, err := url.Parse(repo)
 	if err != nil {
 		return fmt.Errorf("failed to parse repo url %q: %s", repo, err)
 	}
 
 	site := githubHTTPStoWeb(repo)
-	siteURL, err := url.Parse( site );
+	siteURL, err := url.Parse(site)
 	if err != nil {
 		return fmt.Errorf("failed to parse repo url %q: %s", site, err)
 	}
@@ -207,7 +206,7 @@ func (r *redirectCreator) writeHTML(name string, data templateData) error {
 	log.Printf("Writing %q\n", path)
 
 	if err := os.MkdirAll(path, 0755); err != nil {
-		return fmt.Errorf("Failed to mkdir %q: %s", path, err)
+		return fmt.Errorf("failed to mkdir %q: %s", path, err)
 	}
 
 	f, err := os.Create(filepath.Join(path, "index.html"))
@@ -228,27 +227,25 @@ func main() {
 	var redirect *redirectCreator
 
 	switch flag.NArg() {
-		case 2:
-			srcdir := filepath.Join(build.Default.GOPATH, "src")
-			redirect = &redirectCreator{
-				vanity: flag.Arg(0),
-				input: filepath.Join(srcdir, flag.Arg(0)),
-				output: flag.Arg(1),
-			}
-			fmt.Fprintf(os.Stderr, "Warning: <input dir> assumed to be %q. Please specify it in future.\n", redirect.input)
-			break
+	case 2:
+		srcdir := filepath.Join(build.Default.GOPATH, "src")
+		redirect = &redirectCreator{
+			vanity: flag.Arg(0),
+			input:  filepath.Join(srcdir, flag.Arg(0)),
+			output: flag.Arg(1),
+		}
+		fmt.Fprintf(os.Stderr, "Warning: <input dir> assumed to be %q. Please specify it in future.\n", redirect.input)
 
-		case 3:
-			redirect = &redirectCreator{
-				vanity: flag.Arg(0),
-				input: flag.Arg(1),
-				output: flag.Arg(2),
-			}
-			break
+	case 3:
+		redirect = &redirectCreator{
+			vanity: flag.Arg(0),
+			input:  flag.Arg(1),
+			output: flag.Arg(2),
+		}
 
-		default:
-			flag.Usage()
-			os.Exit(1)
+	default:
+		flag.Usage()
+		os.Exit(1)
 	}
 
 
