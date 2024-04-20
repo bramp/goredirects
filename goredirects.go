@@ -123,13 +123,13 @@ func (r *redirectCreator) Create() error {
 func (redirectCreator) repoURL(repopath string) (string, error) {
 	repo, err := git.PlainOpen(repopath)
 	if err != nil {
-		return "", fmt.Errorf("failed to open: %s", repopath, err)
+		return "", fmt.Errorf("failed to open %q: %s", repopath, err)
 	}
 
 	remote, err := repo.Remote("origin")
 	if err != nil {
 		// TODO Use repo.Remotes() to find one if origin doesn't exist
-		return "", fmt.Errorf("failed to get remote %q: %s", "origin", repopath, err)
+		return "", fmt.Errorf("failed to get remote %q: %s", repopath, err)
 	}
 
 	urls := remote.Config().URLs
@@ -160,7 +160,7 @@ func (r *redirectCreator) handleRepo(repopath string) error {
 	// TODO make these use URLs not strings
 	repoURL, err := url.Parse(repo);
 	if err != nil {
-		return fmt.Errorf("failed to parse repo url $q: %s", repo, err)
+		return fmt.Errorf("failed to parse repo url %q: %s", repo, err)
 	}
 
 	site := githubHTTPStoWeb(repo)
