@@ -147,7 +147,7 @@ func (redirectCreator) repoURL(repopath string) (string, error) {
 func (r *redirectCreator) handleRepo(repopath string) error {
 	name, err := filepath.Rel(r.input, repopath)
 	if err != nil {
-		return fmt.Errorf("failed to lookup repo name: %s", err)
+		return fmt.Errorf("failed to lookup repository name: %s", err)
 	}
 
 	vanityName := url.URL{
@@ -157,19 +157,19 @@ func (r *redirectCreator) handleRepo(repopath string) error {
 
 	repo, err := r.repoURL(repopath)
 	if err != nil {
-		return fmt.Errorf("failed to lookup repo url: %s", err)
+		return fmt.Errorf("failed to lookup repository url: %s", err)
 	}
 
 	// TODO make these use URLs not strings
 	repoURL, err := url.Parse(repo)
 	if err != nil {
-		return fmt.Errorf("failed to parse repo url %q: %s", repo, err)
+		return fmt.Errorf("failed to parse repository url %q: %s", repo, err)
 	}
 
 	site := githubHTTPStoWeb(repo)
 	siteURL, err := url.Parse(site)
 	if err != nil {
-		return fmt.Errorf("failed to parse repo url %q: %s", site, err)
+		return fmt.Errorf("failed to parse repository url %q: %s", site, err)
 	}
 
 	data := templateData{
