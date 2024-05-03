@@ -31,6 +31,45 @@ HTML into the outputdir for each package.
 
 To read more about how this tool works, checkout my [blog article](https://blog.bramp.net/post/2017/10/02/vanity-go-import-paths/) on the topic.
 
+## Developing
+
+Before committing, please run:
+
+```shell
+go fmt
+
+go test
+
+go vet ./...
+
+go install honnef.co/go/tools/cmd/staticcheck@latest
+staticcheck ./...
+
+go install golang.org/x/lint/golint@latest
+golint ./...
+```
+
+### Updating test data
+
+There are test git repos under `test/input`. Git forbides a `.git` directory to be checked in, so we put them all in a tar file, that is extracted during testing.
+
+Extract the tar
+
+```shell
+tar -xvf test/input.tar.gz test/input
+```
+
+Create a new tar file:
+
+```shell
+find test/input -print0 | LC_ALL=C sort -z |
+tar --no-recursion --null -T - \
+    --no-xattrs \
+    --no-recursion \
+    --options '!timestamp' \
+    -cvzf test/input.tar.gz
+```
+
 ## Licence (Apache 2)
 
 *This is not an official Google product (experimental or otherwise), it is just

@@ -1,1 +1,4 @@
 goredirects
+
+# Ignore the generated test data
+test/got

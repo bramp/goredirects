@@ -102,7 +102,11 @@ func isDir(path string) bool {
 func (r *redirectCreator) Create() error {
 	repos, err := filepath.Glob(filepath.Join(r.input, "*"))
 	if err != nil {
-		return fmt.Errorf("failed to read repos: %s", err)
+		return fmt.Errorf("failed to read repositories: %s", err)
+	}
+
+	if repos == nil {
+		return fmt.Errorf("no repositories found in %q", r.input)
 	}
 
 	for _, repopath := range repos {
@@ -248,6 +252,7 @@ func main() {
 		os.Exit(1)
 	}
 
-
-	redirect.Create()
+	if err := redirect.Create(); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed: %v", err)
+	}
 }
