@@ -2,3 +2,6 @@ goredirects
 
 # Ignore the generated test data
 test/got
+
+# Ignore the input git repos. They are actually stored in test/input.tar.gz
+test/input
