@@ -14,10 +14,10 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"testing"
-	"fmt"
 )
 
 func TestGithubSSHtoHTTPS(t *testing.T) {
@@ -77,7 +77,6 @@ func TestCreate(t *testing.T) {
 func extractTestData() error {
 	return exec.Command("tar", "-xvf", "test/input.tar.gz", "test/input").Run()
 }
-
 
 func TestMain(m *testing.M) {
 	if err := extractTestData(); err != nil {
