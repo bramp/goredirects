@@ -1,11 +1,17 @@
-# goredirects [![Report card](https://goreportcard.com/badge/bramp.net/goredirects)](https://goreportcard.com/report/bramp.net/goredirects) [![GoDoc](https://godoc.org/bramp.net/goredirects?status.svg)](https://godoc.org/bramp.net/goredirects)
-
-by Andrew Brampton ([bramp.net](https://bramp.net))
+# goredirects
 
 goredirects enables the use of a vanity redirect domain in your go package
 imports. For example, instead of using `import "github.com/example/package"` you
 could use a vanity domain, and `import "example.com/package"`, yet still host the
 source code on GitHub.
+
+by Andrew Brampton ([bramp.net](https://bramp.net)) (c) 2017-2026
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/bramp)
+
+[![Report card](https://goreportcard.com/badge/bramp.net/goredirects)](https://goreportcard.com/report/bramp.net/goredirects) [![GoDoc](https://godoc.org/bramp.net/goredirects?status.svg)](https://godoc.org/bramp.net/goredirects)
+
+---
 
 Specifically, this tool creates a set of HTML files containing the go-imports
 meta tags, for each of your projects. This uses the [remote import
@@ -36,17 +42,7 @@ To read more about how this tool works, checkout my [blog article](https://blog.
 Before committing, please run:
 
 ```shell
-go fmt
-
-go test
-
-go vet ./...
-
-go install honnef.co/go/tools/cmd/staticcheck@latest
-staticcheck ./...
-
-go install golang.org/x/lint/golint@latest
-golint ./...
+make all
 ```
 
 ### Updating test data
