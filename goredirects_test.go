@@ -80,7 +80,9 @@ func TestCreate(t *testing.T) {
 }
 
 func extractTestData() error {
-	return exec.Command("tar", "-xvf", "test/input.tar.gz", "test/input").Run()
+	// We use -xvf to extract, and try to ensure .git directories are included.
+	// Some tar versions (like on macOS) might have different defaults.
+	return exec.Command("tar", "-xzf", "test/input.tar.gz").Run()
 }
 
 func TestMain(m *testing.M) {
