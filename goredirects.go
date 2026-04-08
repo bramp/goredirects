@@ -14,7 +14,7 @@
 
 // goredirects creates static HTML that redirects go packages hosted
 // on a vanity domain to GitHub.
-package main // import "bramp.net/goredirects"
+package main
 
 import (
 	"flag"
@@ -47,9 +47,11 @@ const html = `<html>
 `
 
 type redirectCreator struct {
-	vanity string // The vanity domain
-	input  string // The path to the root of all go projects
-	output string // The output location
+	vanity        string // The vanity domain
+	input         string // The path to the root of all go projects
+	output        string // The output location
+	gitRemote     string // The git remote name
+	includeVendor bool   // Include vendor directory
 }
 
 // templateData holds the data to be rendered by the template
@@ -61,30 +63,30 @@ type templateData struct {
 
 var tmpl = template.Must(template.New("index").Parse(html))
 
-var githubSSHrx = regexp.MustCompile("git@github.com:([^/]*)/(.*).git")
-var githubHTTPSrx = regexp.MustCompile("https://github.com/([^/]*)/(.*)(?:.git)?")
+var gitSSHrx = regexp.MustCompile("git@(.*):([^/]*)/(.*).git")
+var gitHTTPSrx = regexp.MustCompile("https://(.*)/([^/]*)/(.*)(?:.git)?")
 
-// githubSSHtoHTTPS takes a URL to a SSH repo, and returns the equlivant HTTPS url.
-// If it is already a valid Github HTTPS URL just return it.
-func githubSSHtoHTTPS(url string) string {
-	matches := githubSSHrx.FindStringSubmatch(url)
-	if len(matches) == 3 {
-		return fmt.Sprintf("https://github.com/%s/%s.git", matches[1], matches[2])
+// gitSSHtoHTTPS takes a URL to a SSH repo, and returns the equlivant HTTPS url.
+// If it is already a valid Git HTTPS URL just return it.
+func gitSSHtoHTTPS(url string) string {
+	matches := gitSSHrx.FindStringSubmatch(url)
+	if len(matches) == 4 {
+		return fmt.Sprintf("https://%s/%s/%s.git", matches[1], matches[2], matches[3])
 	}
 
 	// Perhaps it is already a HTTPS URL?
-	if githubHTTPSrx.MatchString(url) {
+	if gitHTTPSrx.MatchString(url) {
 		return url
 	}
 
 	// TODO(bramp) Change this to return an error.
-	panic(fmt.Sprintf("not a github repo URL %q", url))
+	panic(fmt.Sprintf("not a git repo URL %q", url))
 }
 
-// githubHTTPStoWeb takes a URL to a HTTPS repo, and returns the site.
-func githubHTTPStoWeb(url string) string {
-	if !githubHTTPSrx.MatchString(url) {
-		panic(fmt.Sprintf("not a github HTTP URL %q", url))
+// gitHTTPStoWeb takes a URL to a HTTPS repo, and returns the site.
+func gitHTTPStoWeb(url string) string {
+	if !gitHTTPSrx.MatchString(url) {
+		panic(fmt.Sprintf("not a git HTTP URL %q", url))
 	}
 	return strings.TrimSuffix(url, ".git")
 }
@@ -124,13 +126,13 @@ func (r *redirectCreator) Create() error {
 }
 
 // Returns the HTTPS/Web URL for this repo.
-func (redirectCreator) repoURL(repopath string) (string, error) {
+func (r *redirectCreator) repoURL(repopath string) (string, error) {
 	repo, err := git.PlainOpen(repopath)
 	if err != nil {
 		return "", fmt.Errorf("failed to open %q: %s", repopath, err)
 	}
 
-	remote, err := repo.Remote("origin")
+	remote, err := repo.Remote(r.gitRemote)
 	if err != nil {
 		// TODO Use repo.Remotes() to find one if origin doesn't exist
 		return "", fmt.Errorf("failed to get remote %q: %s", repopath, err)
@@ -141,7 +143,7 @@ func (redirectCreator) repoURL(repopath string) (string, error) {
 		return "", fmt.Errorf("expected only one URL %q: %q", repopath, urls)
 	}
 
-	return githubSSHtoHTTPS(urls[0]), nil
+	return gitSSHtoHTTPS(urls[0]), nil
 }
 
 func (r *redirectCreator) handleRepo(repopath string) error {
@@ -166,7 +168,7 @@ func (r *redirectCreator) handleRepo(repopath string) error {
 		return fmt.Errorf("failed to parse repository url %q: %s", repo, err)
 	}
 
-	site := githubHTTPStoWeb(repo)
+	site := gitHTTPStoWeb(repo)
 	siteURL, err := url.Parse(site)
 	if err != nil {
 		return fmt.Errorf("failed to parse repository url %q: %s", site, err)
@@ -190,6 +192,12 @@ func (r *redirectCreator) handleRepo(repopath string) error {
 			if err != nil {
 				return err
 			}
+
+			// Skip vendor directories if requested
+			if !r.includeVendor && strings.Contains(dir, "/vendor/") {
+				return nil
+			}
+
 			if _, found := subpackages[dir]; !found {
 				r.writeHTML(dir, data)
 			}
@@ -221,8 +229,16 @@ func (r *redirectCreator) writeHTML(name string, data templateData) error {
 }
 
 func main() {
+	var (
+		includeVendor bool
+		gitRemote     string
+	)
+
+	flag.BoolVar(&includeVendor, "include-vendor", false, "Include vendor directory")
+	flag.StringVar(&gitRemote, "git-remote", "origin", "Git remote name")
+
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s <domain> <input dir> <output dir>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] <domain> <input dir> <output dir>\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 
@@ -234,17 +250,21 @@ func main() {
 	case 2:
 		srcdir := filepath.Join(build.Default.GOPATH, "src")
 		redirect = &redirectCreator{
-			vanity: flag.Arg(0),
-			input:  filepath.Join(srcdir, flag.Arg(0)),
-			output: flag.Arg(1),
+			vanity:        flag.Arg(0),
+			input:         filepath.Join(srcdir, flag.Arg(0)),
+			output:        flag.Arg(1),
+			includeVendor: includeVendor,
+			gitRemote:     gitRemote,
 		}
 		fmt.Fprintf(os.Stderr, "Warning: <input dir> assumed to be %q. Please specify it in future.\n", redirect.input)
 
 	case 3:
 		redirect = &redirectCreator{
-			vanity: flag.Arg(0),
-			input:  flag.Arg(1),
-			output: flag.Arg(2),
+			vanity:        flag.Arg(0),
+			input:         flag.Arg(1),
+			output:        flag.Arg(2),
+			includeVendor: includeVendor,
+			gitRemote:     gitRemote,
 		}
 
 	default:

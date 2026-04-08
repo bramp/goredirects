@@ -25,7 +25,11 @@ To create a set of static HTML redirects:
 $ go install bramp.net/goredirects@latest
 
 $ goredirects
-Usage: goredirects <domain> <output dir>
+Usage: goredirects [options] <domain> <input dir> <output dir>
+  -git-remote string
+    	Git remote name (default "origin")
+  -include-vendor
+    	Include vendor directory
 
 $ goredirects bramp.net outputdir
 # Looking under $GOROOT/src/bramp.net for all packages
