@@ -60,9 +60,10 @@ func TestGitHTTPStoWeb(t *testing.T) {
 
 func TestCreate(t *testing.T) {
 	redirect := redirectCreator{
-		vanity: "example.com",
-		input:  "test/input",
-		output: "test/got",
+		vanity:    "example.com",
+		input:     "test/input",
+		output:    "test/got",
+		gitRemote: "origin",
 	}
 
 	// Cleanup once we are done
