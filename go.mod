@@ -2,7 +2,7 @@ module bramp.net/goredirects
 
 go 1.26.1
 
-require github.com/go-git/go-git/v5 v5.17.2
+require github.com/go-git/go-git/v5 v5.18.0
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
